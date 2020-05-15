@@ -4,9 +4,7 @@
 
 
 
-依赖包：主要是tensorflow 1.12.0,另外使用了bojone的bert4keras，详见
-
-[bert4keras]: https://github.com/bojone/bert4keras
+依赖包：主要是tensorflow 1.12.0,另外使用了bojone的bert4keras，详见https://github.com/bojone/bert4keras
 
 ，其余见requirements.txt
 
@@ -18,9 +16,7 @@
 
 具体内容见知乎文章。
 
-项目主体来自于本人另一个repo，使用MRC做实体识别，具体可参考
-
-[sequence_tagging]: https://github.com/qiufengyuyi/sequence_tagging
+项目主体来自于本人另一个repo，使用MRC做实体识别，具体可参考https://github.com/qiufengyuyi/sequence_tagging
 
 最终使用Retro-reader方法，在test1.json上的分数为0.856，使用了roberta-large-wwm.
 
