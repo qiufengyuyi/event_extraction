@@ -26,9 +26,6 @@
 
 根据不同阶段，生成两个阶段的k-fold训练数据，具体可参考gen_kfold_data.py
 
-```shell
-bash run_train.sh
-```
 
 ## 事件类型抽取：
 
