@@ -5,7 +5,8 @@ import random
 import numpy as np
 import re
 import os
-from data_processing.tokenize import EventTokenizer
+# deprecated
+#from data_processing.tokenize import EventTokenizer
 from bert4keras.tokenizers import Tokenizer
 from configs.event_config import event_config
 
