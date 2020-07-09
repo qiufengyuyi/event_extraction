@@ -2,8 +2,7 @@
 
 ------
 
-## update on 2020.07.09 优化了gen_kfold_data.py，重构了代码，能够生成event type分类任务的数据neg_fold_data_{}，以及role extraction阶段任务的数据verfify_neg_fold_data_{}，注意所有文件的对应路径要与自己在config中配置的相同。
-
+## update on 2020.07.09 优化了gen_kfold_data.py，重构了代码，能够生成event type分类任务的数据index_type_fold_data_{}，以及role extraction阶段任务的数据verfify_neg_fold_data_{}，注意所有文件的对应路径要与自己在config中配置的相同。另外，neg_fold_data_{}为之前老版本的数据存储格式，与verify_neg_fold_data_{}是一样的，可以一样使用
 依赖包：主要是tensorflow 1.12.0,另外使用了bojone的bert4keras，详见https://github.com/bojone/bert4keras
 
 ，其余见requirements.txt
