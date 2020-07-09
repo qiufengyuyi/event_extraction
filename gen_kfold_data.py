@@ -6,7 +6,7 @@ from configs.event_config import event_config
 
 def gen_type_classification_data():
     """
-    generate event type classification data of neg_fold_data_{}
+    generate event type classification data of index_type_fold_data_{}
     """
     # bert vocab file path
     vocab_file_path = os.path.join(event_config.get("bert_pretrained_model_path"), event_config.get("vocab_file"))
