@@ -444,8 +444,12 @@ class EventTypeClassificationPrepare:
                 line = line.strip()
                 line = line.strip("\n")
                 arr = line.split("\t")
-                labels_map[arr[0]] = int(arr[1])
-                id2labels_map[int(arr[1])] = arr[0]
+                label = '-'.join(arr[0].split('-')[:-1])
+                id = int(arr[1])
+                if label in labels_map:
+                    continue
+                labels_map[label] = len(labels_map)
+                id2labels_map[len(id2labels_map)] = label
         return labels_map, id2labels_map
 
     def truncate_seq_head_tail(self, tokens, head_len, tail_len, max_length):
