@@ -561,7 +561,7 @@ class EventTypeClassificationPrepare:
                 tail_len = text_allow_len - header_len
                 dealt_token_ids = token_ids[1:-1]
                 prefix_token_ids = self.truncate_seq_head_tail(dealt_token_ids, header_len, tail_len, text_allow_len)
-                token_ids = [token_ids_org[0]] + prefix_token_ids + [token_ids_org[1]]
+                token_ids = [token_ids_org[0]] + prefix_token_ids + [token_ids_org[-1]]
                 token_type_ids = [0] * len(token_ids)
 
             for index, event_type_raw in enumerate(all_event_type_split):
