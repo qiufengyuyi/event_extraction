@@ -774,6 +774,7 @@ def parse_kfold_verfify(args):
 if __name__ == '__main__':
     print(os.listdir("data/slot_pattern/"))
     parser = ArgumentParser()
+    parser.add_argument("--mode", default="verify", type=str)
     parser.add_argument("--model_trigger_pb_dir",
                         default='bert_model_pb', type=str)
     parser.add_argument("--model_role_pb_dir",
@@ -796,5 +797,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     # print(args.label_less)
     # parse_main(args)
-    parse_kfold_verfify(args)
+    if(args.mode=="verify"):
+        parse_kfold_verfify(args)
+    elif(args.mode=="test1"):
+        parse_kfold(args)
+
     # parse_multitask(args)
