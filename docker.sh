@@ -1,0 +1,1 @@
+docker run --rm --name event_extractor -it --gpus all --mount type=bind,source=/home/chendixi/Research/Project/event_extraction,target=/event_extraction tensorflow-event-extraction:1.0 bash

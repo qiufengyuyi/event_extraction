@@ -1,4 +1,3 @@
-tensorflow-gpu==1.12.0
 bert4keras
 numpy
 gensim

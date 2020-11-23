@@ -17,7 +17,7 @@ event_config = {
     'data_file_name': 'orig_data_train.txt',
     'event_data_file_train': "train.json",
     'event_data_file_eval': "dev.json",
-    'event_data_file_test': "test.json",
+    'event_data_file_test': "test1.json",
     'train_valid_data_dir': 'train_valid_data_bert_event',
     'train_data_text_name': 'train_split_data_text.npy',
     'valid_data_text_name': 'valid_split_data_text.npy',

@@ -1,7 +1,6 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
-import torch.nn as nn
-nn.KLDivLoss()
+
 # tf.enable_eager_execution()
 
 # batch_size_tensor = tf.Variable(tf.range(0,4))
