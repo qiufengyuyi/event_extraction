@@ -12,7 +12,7 @@ from models.bert_event_type_classification import bert_classification_model_fn_b
 from data_processing.data_utils import *
 from data_processing.event_prepare_data import EventRolePrepareMRC, EventTypeClassificationPrepare
 # from data_processing.event_prepare_data import EventRoleClassificationPrepare
-from data_processing.event_prepare_data import event_input_bert_mrc_mul_fn, event_index_class_input_bert_fn
+from data_processing.event_prepare_data import event_input_bert_mrc_mul_fn, event_index_class_input_bert_fn, event_input_bert_mrc_fn
 from data_processing.event_prepare_data import event_binclass_input_bert_fn
 from models.bert_event_type_classification import bert_binaryclassification_model_fn_builder
 from data_processing.event_prepare_data import event_input_verfify_mrc_fn
@@ -114,15 +114,17 @@ def run_event_role_mrc(args):
     # dev_datas, dev_labels_start,dev_labels_end,dev_query_lens,dev_token_type_id_list = data_loader._read_json_file(eval_file,None,False)
     # train_datas, train_labels_start,train_labels_end,train_query_lens,train_token_type_id_list,dev_datas, dev_labels_start,dev_labels_end,dev_query_lens,dev_token_type_id_list = data_loader._merge_ee_and_re_datas(train_file,eval_file,"relation_extraction/data/train_data.json","relation_extraction/data/dev_data.json")
 
-    train_datas = np.load("data/neg_fold_data_{}/token_ids_train.npy".format(args.fold_index), allow_pickle=True)
-    train_labels = np.load("data/neg_fold_data_{}/multi_labels_train.npy".format(args.fold_index), allow_pickle=True)
-    train_query_lens = np.load("data/neg_fold_data_{}/query_lens_train.npy".format(args.fold_index), allow_pickle=True)
-    train_token_type_id_list = np.load("data/neg_fold_data_{}/token_type_ids_train.npy".format(args.fold_index),
+    train_datas = np.load("data/verify_neg_fold_data_{}/token_ids_train.npy".format(args.fold_index), allow_pickle=True)
+    # train_labels = np.load("data/verify_neg_fold_data_{}/multi_labels_train.npy".format(args.fold_index), allow_pickle=True)
+    train_start_labels = np.load("data/verify_neg_fold_data_{}/labels_start_train.npy".format(args.fold_index), allow_pickle=True)
+    train_end_labels = np.load("data/verify_neg_fold_data_{}/labels_end_train.npy".format(args.fold_index), allow_pickle=True)
+    train_query_lens = np.load("data/verify_neg_fold_data_{}/query_lens_train.npy".format(args.fold_index), allow_pickle=True)
+    train_token_type_id_list = np.load("data/verify_neg_fold_data_{}/token_type_ids_train.npy".format(args.fold_index),
                                        allow_pickle=True)
-    dev_datas = np.load("data/neg_fold_data_{}/token_ids_dev.npy".format(args.fold_index), allow_pickle=True)
-    dev_labels = np.load("data/neg_fold_data_{}/multi_labels_dev.npy".format(args.fold_index), allow_pickle=True)
-    dev_query_lens = np.load("data/neg_fold_data_{}/query_lens_dev.npy".format(args.fold_index), allow_pickle=True)
-    dev_token_type_id_list = np.load("data/neg_fold_data_{}/token_type_ids_dev.npy".format(args.fold_index),
+    dev_datas = np.load("data/verify_neg_fold_data_{}/token_ids_dev.npy".format(args.fold_index), allow_pickle=True)
+    dev_labels = np.load("data/verify_neg_fold_data_{}/multi_labels_dev.npy".format(args.fold_index), allow_pickle=True)
+    dev_query_lens = np.load("data/verify_neg_fold_data_{}/query_lens_dev.npy".format(args.fold_index), allow_pickle=True)
+    dev_token_type_id_list = np.load("data/verify_neg_fold_data_{}/token_type_ids_dev.npy".format(args.fold_index),
                                      allow_pickle=True)
 
     train_samples_nums = len(train_datas)
@@ -166,12 +168,19 @@ def run_event_role_mrc(args):
         params=params,
         config=run_config)
     if args.do_train:
-        train_input_fn = lambda: event_input_bert_mrc_mul_fn(
-            train_datas, train_labels, train_token_type_id_list, train_query_lens,
+        # train_input_fn = lambda: event_input_bert_mrc_mul_fn(
+        #     train_datas, train_labels, train_token_type_id_list, train_query_lens,
+        #     is_training=True, is_testing=False, args=args)
+        train_input_fn = lambda: event_input_bert_mrc_fn(
+            train_datas, train_start_labels, train_end_labels, train_token_type_id_list, train_query_lens,
             is_training=True, is_testing=False, args=args)
-        eval_input_fn = lambda: event_input_bert_mrc_mul_fn(
-            dev_datas, dev_labels, dev_token_type_id_list, dev_query_lens,
-            is_training=False, is_testing=False, args=args)
+        # eval_input_fn = lambda: event_input_bert_mrc_mul_fn(
+        #     dev_datas, dev_labels, dev_token_type_id_list, dev_query_lens,
+        #     is_training=False, is_testing=False, args=args)
+        eval_input_fn = lambda: event_input_bert_mrc_fn(
+            train_datas, train_start_labels, train_end_labels, train_token_type_id_list, train_query_lens,
+            is_training=True, is_testing=False, args=args)
+        
         train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn, max_steps=train_steps_nums
                                             )
         exporter = tf.estimator.BestExporter(exports_to_keep=1,

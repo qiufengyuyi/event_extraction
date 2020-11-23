@@ -60,11 +60,15 @@ class bertMRC(object):
 def bert_mrc_model_fn_builder(bert_config_file,init_checkpoints,args):
     def model_fn(features, labels, mode, params):
         logger.info("*** Features ***")
+        
         if isinstance(features, dict):
             features = features['words'],features['text_length'],features['query_length'],features['token_type_ids']
         print(features)
         input_ids,text_length_list,query_length_list,token_type_id_list = features
         if labels is not None:
+            # print("Debug!!!!!!!")
+            # print(labels) # Tensor("IteratorGetNext:4", shape=(?, ?), dtype=int32)
+            # print(mode) 
             start_labels,end_labels = labels
         else:
             start_labels, end_labels = None,None
@@ -98,7 +102,7 @@ def bert_mrc_model_fn_builder(bert_config_file,init_checkpoints,args):
         #                                     weights=weight)
 
         if mode == tf.estimator.ModeKeys.TRAIN:
-            train_op = optimization.create_optimizer(loss,args.lr, params["decay_steps"],args.clip_norm)
+            train_op = optimization.create_optimizer(loss,args.lr, params["decay_steps"],args.clip_norm, False)
             hook_dict = {}
             # precision_score, precision_update_op = precision(labels=labels, predictions=pred_ids,
             #                                                  num_classes=params["num_labels"], weights=weight)

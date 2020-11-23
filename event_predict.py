@@ -250,6 +250,8 @@ class fastPredictMRC:
                                   'token_type_ids': [token_type_ids]})
         # print(predictions)
         # start_ids, end_ids,start_probs,end_probs = predictions.get("start_ids"), predictions.get("end_ids"),predictions.get("start_probs"), predictions.get("end_probs")
+        # print("Debug Output!!!!!!!!!!!")
+        # print(predictions)
         pred_ids, pred_probs = predictions.get("pred_ids"), predictions.get("pred_probs")
         # return start_ids[0], end_ids[0],start_probs[0], end_probs[0]
         return pred_ids[0], pred_probs[0]
@@ -365,14 +367,14 @@ def parse_kfold(args):
     id_list, text_list = fp_type.parse_test_json(test_file)
     kfold_type_result_list = []
     event_type_result_list = []
-    for k in range(6):
+    for k in range(2):
         predict_fn = fp_type.load_models_kfold(class_type_model_path.format(k))
         cur_fold_event_type_probs = fp_type.predict_for_all_prob(predict_fn, text_list)
         kfold_type_result_list.append(cur_fold_event_type_probs)
 
     for i in range(len(text_list)):
         cur_sample_event_type_buffer = [ele[i] for ele in kfold_type_result_list]
-        cur_sample_event_type_prob = np.array(cur_sample_event_type_buffer).reshape((6, 65))
+        cur_sample_event_type_prob = np.array(cur_sample_event_type_buffer).reshape((-1, 65))
         avg_result = np.mean(cur_sample_event_type_prob, axis=0)
         event_label_ids = np.argwhere(avg_result > 0.45)
         event_cur_type_strs = [fp_type.data_loader.id2labels_map.get(
