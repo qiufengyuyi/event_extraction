@@ -13,7 +13,8 @@ from pathlib import Path
 from argparse import ArgumentParser
 import datetime
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 
 class fastPredictTypeClassification:
@@ -212,7 +213,8 @@ class fastPredictMRC:
         subdirs = [x for x in Path(model_path).iterdir()
                    if x.is_dir() and 'tmp' not in str(x)]
         latest = str(sorted(subdirs)[-1])
-        # print(latest)
+        print("latest!!!!")
+        print(latest)
         predict_fn = predictor.from_saved_model(latest)
         return predict_fn
 
@@ -250,8 +252,9 @@ class fastPredictMRC:
                                   'token_type_ids': [token_type_ids]})
         # print(predictions)
         # start_ids, end_ids,start_probs,end_probs = predictions.get("start_ids"), predictions.get("end_ids"),predictions.get("start_probs"), predictions.get("end_probs")
-        # print("Debug Output!!!!!!!!!!!")
-        # print(predictions)
+        print("Debug Output!!!!!!!!!!!")
+        print("predictions")
+        print(predictions)
         pred_ids, pred_probs = predictions.get("pred_ids"), predictions.get("pred_probs")
         # return start_ids[0], end_ids[0],start_probs[0], end_probs[0]
         return pred_ids[0], pred_probs[0]
@@ -365,14 +368,19 @@ def parse_kfold(args):
     event_schema_dict = parse_event_schema(event_schema_file)
     fp_type = fastPredictTypeClassification(class_type_model_path, event_config)
     id_list, text_list = fp_type.parse_test_json(test_file)
-    kfold_type_result_list = []
+    # print("Debug Output!!!!!!!!!!!")
+    # print("len ")
+    # print(text_list[-1])
+    # exit(1)
+    
+    kfold_type_result_list = [] # 应该是个2位数组
     event_type_result_list = []
-    for k in range(2):
+    for k in range(1):
         predict_fn = fp_type.load_models_kfold(class_type_model_path.format(k))
         cur_fold_event_type_probs = fp_type.predict_for_all_prob(predict_fn, text_list)
         kfold_type_result_list.append(cur_fold_event_type_probs)
-
-    for i in range(len(text_list)):
+    
+    for i in range(len(text_list)): # 1485条
         cur_sample_event_type_buffer = [ele[i] for ele in kfold_type_result_list]
         cur_sample_event_type_prob = np.array(cur_sample_event_type_buffer).reshape((-1, 65))
         avg_result = np.mean(cur_sample_event_type_prob, axis=0)
@@ -380,7 +388,13 @@ def parse_kfold(args):
         event_cur_type_strs = [fp_type.data_loader.id2labels_map.get(
             ele[0]) for ele in event_label_ids]
         event_type_result_list.append(event_cur_type_strs)
-
+    # print("Debug Output!!!!!!!!!!!")
+    # print("kfold_type_result_list!!!")
+    # print(len(kfold_type_result_list)) ：k的数量
+    # print(len(kfold_type_result_list[1])) ：1485
+    # print(len(kfold_type_result_list[1][0])) ：65
+    # exit(1)
+    
     # event_type_result_list = fp_type.predict_for_all((text_list))
     # event_type_result_list = []
     # with codecs.open("new_final_event_type.txt", 'r', 'utf-8') as fr:
