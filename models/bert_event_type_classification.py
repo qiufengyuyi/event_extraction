@@ -44,9 +44,7 @@ class bertEventType(object):
         # bert_project = tf.layers.dropout(bert_project,rate=self.dropout_rate,training=is_training)
         # bert_project = tf.layers.dense(bert_project, self.num_labels)
         # pred_ids = tf.argmax(bert_project, axis=-1, name="pred_ids")
-
         # pred_prob = tf.nn.softmax(bert_project, axis=-1, name="pred_probs")
-
         if not is_testing:
             # one_hot_labels = tf.one_hot(labels, depth=self.num_labels, dtype=tf.float32)
             # log_probs = tf.nn.log_softmax(bert_project, axis=-1)
@@ -57,11 +55,9 @@ class bertEventType(object):
             per_example_loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=labels, logits=bert_project)
             per_example_loss *= self.class_weight
             loss = tf.reduce_mean(per_example_loss)
-
             # loss = tf.reduce_mean(per_example_loss)
             # loss = dice_dsc_loss(bert_project,labels,text_length_list,weight,self.num_labels)
             # loss = focal_dsc_loss(bert_project,labels,text_length_list,weight,self.num_labels)
-
             return per_example_loss, loss, pred_prob
         else:
             return pred_prob
@@ -94,7 +90,7 @@ class bertEventTypeModified(object):
         batch_ids = tf.expand_dims(batch_ids, 1)
         batch_ids = tf.expand_dims(batch_ids, -1)
         batch_ids = tf.tile(batch_ids, [1, self.num_labels, 1])
-        type_index_in_token_ids = tf.expand_dims(type_index_in_token_ids, axis=-1)
+        type_index_in_token_ids = tf.expand_dims(type_index_in_token_ids, axis=-1) # 变成 (batch_size, 65, 1)
         type_index = tf.concat([batch_ids, type_index_in_token_ids], axis=-1)
         type_head_tensor = tf.gather_nd(bert_embedding, type_index)
         print(type_head_tensor)
@@ -142,7 +138,7 @@ class bertEventTypeModified(object):
             return pred_prob
 
 
-def bert_classification_model_fn_builder(bert_config_file, init_checkpoints, args):
+def bert_classification_model_fn_builder(bert_config_file, init_checkpoints, args): # bert_config.json 文件路径， checkpoints 文件路径
     def model_fn(features, labels, mode, params):
         logger.info("*** Features ***")
         if isinstance(features, dict):
@@ -179,7 +175,7 @@ def bert_classification_model_fn_builder(bert_config_file, init_checkpoints, arg
                 modeling.get_assignment_map_from_checkpoint(tvars,
                                                             init_checkpoints)
             tf.train.init_from_checkpoint(init_checkpoints, assignment_map)
-        output_spec = None
+        output_spec = None # 占位 output spec
         # f1_score_val, f1_update_op_val = f1(labels=labels, predictions=pred_ids, num_classes=params["num_labels"],
         #                                     weights=weight)
 
@@ -204,16 +200,18 @@ def bert_classification_model_fn_builder(bert_config_file, init_checkpoints, arg
                 training_hooks=[logging_hook])
 
         elif mode == tf.estimator.ModeKeys.EVAL:
-
-            pred_ids = tf.where(pred_ids > 0.5, tf.ones_like(pred_ids), tf.zeros_like(pred_ids))
+            
+            # 全部转笔乘0 1
+            pred_ids = tf.where(pred_ids > 0.5, tf.ones_like(pred_ids), tf.zeros_like(pred_ids)) # Return the elements, either from x or y, depending on the condition
 
             def metric_fn(per_example_loss, label_ids, probabilities):
 
                 logits_split = tf.split(probabilities, params["num_labels"], axis=-1)
                 label_ids_split = tf.split(label_ids, params["num_labels"], axis=-1)
+                # split 为 （batch_size, 1）
                 # metrics change to auc of every class
                 eval_dict = {}
-                for j, logits in enumerate(logits_split):
+                for j, logits in enumerate(logits_split): # 表示每个事件类别的概率输出
                     label_id_ = tf.cast(label_ids_split[j], dtype=tf.int32)
                     current_auc, update_op_auc = tf.metrics.auc(label_id_, logits)
                     eval_dict[str(j)] = (current_auc, update_op_auc)

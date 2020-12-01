@@ -215,10 +215,10 @@ class EventRolePrepareMRC:
             np.save("data/verify_neg_fold_data_{}/token_type_ids_dev.npy".format(fold_index),
                     cur_token_type_id_list_dev)
             np.save("data/verify_neg_fold_data_{}/labels_start_dev.npy".format(fold_index), cur_label_start_list_dev)
-            np.save("data/verify_neg_fold_data_{}/labels_start_train.npy".format(fold_index),
+            np.save("data/verify_neg_fold_data_{}/labels_start_train.npy".format(fold_index),  # 多注意这个标签
                     cur_label_start_list_train)
             np.save("data/verify_neg_fold_data_{}/labels_end_dev.npy".format(fold_index), cur_label_end_list_dev)
-            np.save("data/verify_neg_fold_data_{}/labels_end_train.npy".format(fold_index), cur_label_end_list_train)
+            np.save("data/verify_neg_fold_data_{}/labels_end_train.npy".format(fold_index), cur_label_end_list_train) # 多注意这个标签
             np.save("data/verify_neg_fold_data_{}/has_answer_dev.npy".format(fold_index), cur_has_answer_dev)
             np.save("data/verify_neg_fold_data_{}/has_answer_train.npy".format(fold_index), cur_has_answer_train)
 
@@ -314,13 +314,13 @@ class EventRolePrepareMRC:
             sentence_token_ids, sentence_token_type_ids = self.tokenizer.encode(sentence)
             if len(sentence_token_ids) != len(sentence_token_type_ids):
                 print(sentence)
-            sentence_token_type_ids = [ids + 1 for ids in sentence_token_type_ids]
+            sentence_token_type_ids = [ids + 1 for ids in sentence_token_type_ids] # 为拼接准备
             if len(sentence_token_ids) != len(sentence_token_type_ids):
                 print(sentence)
             event_list = data["event_list"]
 
-            event_record_list = [event_ele.get("event_type") for event_ele in event_list]
-            event_type_record_list.append(list(set(event_record_list)))
+            event_record_list = [event_ele.get("event_type") for event_ele in event_list] # 没有用
+            event_type_record_list.append(list(set(event_record_list))) # 没有用
             for event in event_list:
                 dealt_role_list = []
                 event_type = event["event_type"]

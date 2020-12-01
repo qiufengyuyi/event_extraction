@@ -311,7 +311,7 @@ def run_event_classification(args):
         estimator.export_saved_model(pb_model_dir, bert_event_type_serving_input_receiver_fn)
 
 
-def run_event_binclassification(args):
+def run_event_binclassification(args): # 粗读粗读原文，判断问题是否可以在原文找到答案
     """
     retroreader中的eav模块，即第一遍阅读模块，预测该问题是否有回答
     :param args:

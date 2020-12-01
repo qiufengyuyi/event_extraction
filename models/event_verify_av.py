@@ -53,7 +53,6 @@ class VerfiyMRC(object):
             # one_hot_labels = tf.one_hot(labels, depth=self.num_labels, dtype=tf.float32)
             # start_loss = ce_loss(start_logits,start_labels,final_mask,self.num_labels,True)
             # end_loss = ce_loss(end_logits,end_labels,final_mask,self.num_labels,True)
-
             # focal loss
             start_loss = focal_loss(start_logits, start_labels, final_mask, self.num_labels, True, 1.8)
             end_loss = focal_loss(end_logits, end_labels, final_mask, self.num_labels, True, 1.8)
