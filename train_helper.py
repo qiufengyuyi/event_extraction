@@ -203,6 +203,7 @@ def run_event_classification(args):
     pb_model_dir = event_config.get(args.model_pb_dir).format(args.fold_index)
     print(model_base_dir)
     print(pb_model_dir)
+    
     vocab_file_path = os.path.join(event_config.get("bert_pretrained_model_path"), event_config.get("vocab_file"))
     bert_config_file = os.path.join(event_config.get("bert_pretrained_model_path"),
                                     event_config.get("bert_config_path"))

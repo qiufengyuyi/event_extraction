@@ -257,7 +257,7 @@ class fastPredictMRC:
         print(predictions)
         pred_ids, pred_probs = predictions.get("pred_ids"), predictions.get("pred_probs")
         # return start_ids[0], end_ids[0],start_probs[0], end_probs[0]
-        import ipdb; ipdb.set_trace()
+        #import ipdb; ipdb.set_trace()
         return pred_ids[0], pred_probs[0]
 
     def extract_entity_from_start_end_ids(self, text, start_ids, end_ids, token_mapping):

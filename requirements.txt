@@ -1,3 +1,5 @@
 bert4keras
 numpy
 gensim
+tensorflow-probability==0.5.0
+ipdb

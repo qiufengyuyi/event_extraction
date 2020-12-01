@@ -11,7 +11,7 @@ def gen_type_classification_data():
     # bert vocab file path
     vocab_file_path = os.path.join(event_config.get("bert_pretrained_model_path"), event_config.get("vocab_file"))
     # bert config file path
-    bert_config_file = os.path.join(event_config.get("bert_pretrained_model_path"), event_config.get("bert_config_path"))
+    bert_config_file = os.path.join(event_config.get("bert_pretrained_model_path"), event_config.get("bert_config_path")) # bert_config.json
     # event type list file path
     event_type_file =  os.path.join(event_config.get("slot_list_root_path"), event_config.get("event_type_file"))
     data_loader =EventTypeClassificationPrepare(vocab_file_path,512,event_type_file)

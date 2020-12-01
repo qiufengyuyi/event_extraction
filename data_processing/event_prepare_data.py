@@ -10,7 +10,6 @@ import os
 from bert4keras.tokenizers import Tokenizer
 from configs.event_config import event_config
 
-
 def search(pattern, sequence):
     """从sequence中寻找子串pattern
     如果找到，返回第一个下标；否则返回-1。
@@ -503,8 +502,8 @@ class EventTypeClassificationPrepare:
                                                          0:fold_start] + type_index_in_token_ids_list[fold_end:]
 
             train_data_index = [i for i in range(len(cur_data_list_train))]
-            random.shuffle(train_data_index)
-            cur_data_list_train = [cur_data_list_train[index] for index in train_data_index]
+            random.shuffle(train_data_index) # 打乱了顺序
+            cur_data_list_train = [cur_data_list_train[index] for index in train_data_index] # 因为之前shuffle过，所以要这样
             cur_label_list_train = [cur_label_list_train[index] for index in train_data_index]
             cur_token_type_id_list_train = [cur_token_type_id_list_train[index] for index in train_data_index]
             cur_type_index_in_token_ids_list_train = [cur_type_index_in_token_ids_list_train[index] for index in
@@ -532,6 +531,8 @@ class EventTypeClassificationPrepare:
             event_type_str = self.id2labels_map.get(i)
             all_event_type_split.append(event_type_str)
         all_event_type_split = [ele.split("-")[-1] for ele in all_event_type_split]
+        # all_event_type_split = [降价 结婚 晋级 ... ... ]
+
         # index_list = [i for i in range(len(input_data))]
         # random.shuffle(index_list)
         # for index in index_list:
@@ -551,11 +552,11 @@ class EventTypeClassificationPrepare:
             type_token_len = 0
             suffix_token_ids = []
 
-            for index, event_type_raw in enumerate(all_event_type_split):
+            for index, event_type_raw in enumerate(all_event_type_split): # 包含56個
                 event_type_token_ids = self.tokenizer.encode(event_type_raw)[0]
                 text_len_for_event_raw_str += len(event_type_token_ids)
 
-            text_allow_len = 510 - text_len_for_event_raw_str
+            text_allow_len = 510 - text_len_for_event_raw_str # 除去開始和結尾，510是最大長度，
             if len(token_ids) > text_allow_len:
                 header_len = int(text_allow_len / 4)
                 tail_len = text_allow_len - header_len
@@ -564,8 +565,8 @@ class EventTypeClassificationPrepare:
                 token_ids = [token_ids_org[0]] + prefix_token_ids + [token_ids_org[-1]]
                 token_type_ids = [0] * len(token_ids)
 
-            for index, event_type_raw in enumerate(all_event_type_split):
-                type_index_in_token_ids.append(len(token_ids))
+            for index, event_type_raw in enumerate(all_event_type_split): # 這裡把 event_type 的 token 放到text的token當中
+                type_index_in_token_ids.append(len(token_ids))  # 這個句子text 的每個 event type token在 token化text 中的開始位置
                 if index == 0:
                     event_type_token_ids = self.tokenizer.encode(event_type_raw)[0]
                     # [unused]
@@ -575,7 +576,7 @@ class EventTypeClassificationPrepare:
                 else:
                     event_type_token_ids = self.tokenizer.encode(event_type_raw)[0][1:]
                     type_token_len += len(event_type_token_ids)
-                suffix_token_ids.extend(event_type_token_ids)
+                suffix_token_ids.extend(event_type_token_ids) # 後綴
                 token_ids = token_ids + event_type_token_ids
                 token_type_ids.extend([1] * len(event_type_token_ids))
             # if len(token_ids) > 512:
