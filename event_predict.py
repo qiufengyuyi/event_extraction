@@ -257,6 +257,7 @@ class fastPredictMRC:
         print(predictions)
         pred_ids, pred_probs = predictions.get("pred_ids"), predictions.get("pred_probs")
         # return start_ids[0], end_ids[0],start_probs[0], end_probs[0]
+        import ipdb; ipdb.set_trace()
         return pred_ids[0], pred_probs[0]
 
     def extract_entity_from_start_end_ids(self, text, start_ids, end_ids, token_mapping):
@@ -479,7 +480,7 @@ def parse_kfold(args):
 
 def parse_kfold_verfify(args):
     # test_file = os.path.join(event_config.get("data_dir"), event_config.get("event_data_file_test"))
-    test_file = "data/test2.json"
+    test_file = "data/test1.json"
     class_type_model_path = event_config.get(args.event_type_model_path)
     event_schema_file = os.path.join(event_config.get("data_dir"), event_config.get("event_schema"))
     event_schema_dict = parse_event_schema(event_schema_file)

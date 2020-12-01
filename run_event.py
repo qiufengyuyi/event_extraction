@@ -42,13 +42,13 @@ def main():
     parser.add_argument("--fold_index", type=int)
 
     args = parser.parse_args()
-    if args.model_type == "role":
-        run_event_role_mrc(args)
-    elif args.model_type == "classification":
+    if args.model_type == "classification": # run_event_classification.sh
         run_event_classification(args)
-    elif args.model_type == "binary":
+    elif args.model_type == "role": # run_event_role.sh
+        run_event_role_mrc(args)
+    elif args.model_type == "binary": # run_retro_eav.sh # 粗读粗读原文，判断问题是否可以在原文找到答案
         run_event_binclassification(args)
-    elif args.model_type == "avmrc":
+    elif args.model_type == "avmrc": # run_retro_rolemrc.sh 精读
         run_event_verify_role_mrc(args)
     # if args.bert_used:
     #     if args.model_type == "bert_mrc":
