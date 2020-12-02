@@ -61,10 +61,13 @@ def bert_mrc_model_fn_builder(bert_config_file,init_checkpoints,args):
     def model_fn(features, labels, mode, params):
         logger.info("*** Features ***")
         
-        if isinstance(features, dict):
+        if isinstance(features, dict): # use this if brance in event_predict.py
             features = features['words'],features['text_length'],features['query_length'],features['token_type_ids']
-        print(features)
+
         input_ids,text_length_list,query_length_list,token_type_id_list = features
+        
+        import ipdb; ipdb.set_trace()
+        
         if labels is not None:
             # print("Debug!!!!!!!")
             # print(labels) # Tensor("IteratorGetNext:4", shape=(?, ?), dtype=int32)

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from argparse import ArgumentParser
 import datetime
-
+import ipdb;
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
@@ -212,10 +212,11 @@ class fastPredictMRC:
     def load_models(self, model_path):
         subdirs = [x for x in Path(model_path).iterdir()
                    if x.is_dir() and 'tmp' not in str(x)]
-        latest = str(sorted(subdirs)[-1])
-        print("latest!!!!")
+        latest = str(sorted(subdirs)[-1]) # take the latest, sorted by the suffix number:"1606125131"
+        # output/model/wwm_lr_fold_0_usingtype_roberta_large_traindev_event_role_bert_mrc_model_desmodified_lowercase/saved_model/1606125131
         print(latest)
         predict_fn = predictor.from_saved_model(latest)
+        
         return predict_fn
 
     def init_data_loader(self, config, model_type):
@@ -255,9 +256,10 @@ class fastPredictMRC:
         print("Debug Output!!!!!!!!!!!")
         print("predictions")
         print(predictions)
+        ipdb.set_trace()
         pred_ids, pred_probs = predictions.get("pred_ids"), predictions.get("pred_probs")
         # return start_ids[0], end_ids[0],start_probs[0], end_probs[0]
-        #import ipdb; ipdb.set_trace()
+        
         return pred_ids[0], pred_probs[0]
 
     def extract_entity_from_start_end_ids(self, text, start_ids, end_ids, token_mapping):
@@ -363,25 +365,35 @@ def extract_entity_span_from_muliclass(text, pred_ids, token_mapping):
 
 
 def parse_kfold(args):
+    # 'data/test.json'
     test_file = os.path.join(event_config.get("data_dir"), event_config.get("event_data_file_test"))
+    # 'output/model/index_fold_{}_roberta_large_traindev_desmodified_lowercase_event_type_class_bert_model/saved_mode'
     class_type_model_path = event_config.get(args.event_type_model_path)
+    # 'data/event_schema.json'
     event_schema_file = os.path.join(event_config.get("data_dir"), event_config.get("event_schema"))
+
     event_schema_dict = parse_event_schema(event_schema_file)
     fp_type = fastPredictTypeClassification(class_type_model_path, event_config)
     id_list, text_list = fp_type.parse_test_json(test_file)
+
+    
     # print("Debug Output!!!!!!!!!!!")
     # print("len ")
     # print(text_list[-1])
     # exit(1)
     
-    kfold_type_result_list = [] # 应该是个2位数组
+    kfold_type_result_list = []
     event_type_result_list = []
+
+    ## 用k个fold 的模型 运行，这里使用了 六轮交叉验证的模型融合和我不同超参数模型的概率融合, 分析每个文本包含什么事件
+
     for k in range(1):
         predict_fn = fp_type.load_models_kfold(class_type_model_path.format(k))
         cur_fold_event_type_probs = fp_type.predict_for_all_prob(predict_fn, text_list)
         kfold_type_result_list.append(cur_fold_event_type_probs)
     
-    for i in range(len(text_list)): # 1485条
+
+    for i in range(len(text_list)):
         cur_sample_event_type_buffer = [ele[i] for ele in kfold_type_result_list]
         cur_sample_event_type_prob = np.array(cur_sample_event_type_buffer).reshape((-1, 65))
         avg_result = np.mean(cur_sample_event_type_prob, axis=0)
@@ -389,6 +401,7 @@ def parse_kfold(args):
         event_cur_type_strs = [fp_type.data_loader.id2labels_map.get(
             ele[0]) for ele in event_label_ids]
         event_type_result_list.append(event_cur_type_strs)
+    
     # print("Debug Output!!!!!!!!!!!")
     # print("kfold_type_result_list!!!")
     # print(len(kfold_type_result_list)) ：k的数量
@@ -403,16 +416,22 @@ def parse_kfold(args):
     #         line = line.strip("\n")
     #         event_list_cur = line.split(",")
     #         event_type_result_list.append(event_list_cur)
+    
     role_model_path = event_config.get(args.model_role_pb_dir)
+    # 'output/model/wwm_lr_fold_{}_usingtype_roberta_large_traindev_event_role_bert_mrc_model_desmodified_lowercase/saved_mode
+
     role_model_path_use_best = "output/model/re_lr_fold_{}_usingtype_roberta_large_traindev_event_role_bert_mrc_model_desmodified_lowercase/checkpoint/export/best_exporter"
     fp_role_mrc = fastPredictMRC(role_model_path, event_config, "role")
     id_list, text_list = fp_role_mrc.parse_test_json(test_file)
     submit_result = []
+
     # index = 0
     kfold_result = []
     for k in range(1):
         # if k in [0,3,5]:
+        # predict_fn 是一个 Predictor
         predict_fn = fp_role_mrc.load_models(role_model_path.format(k))
+
         # else:
         #     predict_fn = fp_role_mrc.load_models(role_model_path_use_best.format(k))
         cur_fold_probs_result = {}
@@ -427,17 +446,21 @@ def parse_kfold(args):
                 if cur_event_type is None or cur_event_type == "":
                     continue
                 corresponding_role_type_list = event_schema_dict.get(cur_event_type)
-                event_type_probs_result = []
+                event_type_probs_result = [] # 
                 for cur_role_type in corresponding_role_type_list:
                     cur_query_word = fp_role_mrc.data_loader.gen_query_for_each_sample(
                         cur_event_type, cur_role_type)
                     token_ids, query_len, token_type_ids, token_mapping = fp_role_mrc.data_loader.trans_single_data_for_test(
                         text, cur_query_word, 512)
 
+                    # problems happens here!!!!
                     pred_ids, pred_probs = fp_role_mrc.predict_single_sample(predict_fn, token_ids, query_len,
                                                                              token_type_ids)
-                    event_type_probs_result.append(pred_probs)
-                cur_fold_probs_result.update({sample_id + "-" + cur_event_type: event_type_probs_result})
+                    event_type_probs_result.append(pred_probs) # the probs to answear the role question
+                cur_fold_probs_result.update({sample_id + "-" + cur_event_type: event_type_probs_result}) 
+                # save { sample1-event_type1:[0.2,0.3,0.4], sample1-event_type2:[0.2,0.9,0.8],
+                # sample2-event_type3:[0.2,0.3,0,4], sample2-event_type4:[0.5,0.2,0.8,0.9,0.95] }
+                # the main key is the combination of text and event_type
         kfold_result.append(cur_fold_probs_result)
 
     for sample_id, event_type_res, text in zip(id_list, event_type_result_list, text_list):
