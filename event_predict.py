@@ -251,16 +251,23 @@ class fastPredictMRC:
 
         predictions = predict_fn({'words': [text], 'text_length': [text_length], 'query_length': [query_len],
                                   'token_type_ids': [token_type_ids]})
+        # predictions = predict_fn({'words': [text], 'text_length': [text_length],
+        #                           'token_type_ids': [token_type_ids]})
         # print(predictions)
         # start_ids, end_ids,start_probs,end_probs = predictions.get("start_ids"), predictions.get("end_ids"),predictions.get("start_probs"), predictions.get("end_probs")
-        print("Debug Output!!!!!!!!!!!")
-        print("predictions")
-        print(predictions)
-        ipdb.set_trace()
-        pred_ids, pred_probs = predictions.get("pred_ids"), predictions.get("pred_probs")
+        # print("Debug Output!!!!!!!!!!!")
+        # print("predictions")
+        # print(predictions)
+        
+        # pred_ids, pred_probs = predictions.get("pred_ids"), predictions.get("pred_probs")
         # return start_ids[0], end_ids[0],start_probs[0], end_probs[0]
         
-        return pred_ids[0], pred_probs[0]
+        # return pred_ids[0], pred_probs[0]
+        # pred_probs = predictions.get("output")
+        # return None, pred_probs[0]
+        start_ids = predictions.get("start_ids")
+        end_ids = predictions.get("end_ids")
+        return start_ids, end_ids
 
     def extract_entity_from_start_end_ids(self, text, start_ids, end_ids, token_mapping):
         # 根据开始，结尾标识，找到对应的实体
@@ -454,9 +461,12 @@ def parse_kfold(args):
                         text, cur_query_word, 512)
 
                     # problems happens here!!!!
-                    pred_ids, pred_probs = fp_role_mrc.predict_single_sample(predict_fn, token_ids, query_len,
-                                                                             token_type_ids)
-                    event_type_probs_result.append(pred_probs) # the probs to answear the role question
+                    # pred_ids, pred_probs = fp_role_mrc.predict_single_sample(predict_fn, token_ids, query_len,
+                                                                            #  token_type_ids)
+                    start_ids , end_ids = fp_role_mrc.predict_single_sample(predict_fn, token_ids, query_len,
+                                                                             token_type_ids)    
+
+                    event_type_probs_result.append((start_ids, end_ids)) # the probs to answear the role question
                 cur_fold_probs_result.update({sample_id + "-" + cur_event_type: event_type_probs_result}) 
                 # save { sample1-event_type1:[0.2,0.3,0.4], sample1-event_type2:[0.2,0.9,0.8],
                 # sample2-event_type3:[0.2,0.3,0,4], sample2-event_type4:[0.5,0.2,0.8,0.9,0.95] }
@@ -476,6 +486,25 @@ def parse_kfold(args):
             find_key = sample_id + "-" + cur_event_type
             fold_probs_cur_sample = [ele.get(find_key) for ele in kfold_result]
             for index, cur_role_type in enumerate(corresponding_role_type_list):
+                ## multi-labels方式
+                # cur_query_word = fp_role_mrc.data_loader.gen_query_for_each_sample(
+                #     cur_event_type, cur_role_type)
+                # token_ids, query_len, token_type_ids, token_mapping = fp_role_mrc.data_loader.trans_single_data_for_test(
+                #     text, cur_query_word, 512)
+                # cur_role_fold_probs = [probs[index] for probs in fold_probs_cur_sample]
+                # # cur_role_fold_probs_array = np.vstack(cur_role_fold_probs)
+                # token_len = len(token_ids)
+                # cur_role_fold_probs_array = np.array(cur_role_fold_probs).reshape((1, token_len, 3))
+                # avg_result = np.mean(cur_role_fold_probs_array, axis=0)
+                # pred_ids = np.argmax(avg_result, axis=-1)
+                # token_mapping = token_mapping[1:-1]
+                # pred_ids = pred_ids[query_len:-1]
+                # entity_list = extract_entity_span_from_muliclass(text, pred_ids, token_mapping)
+                # for entity in entity_list:
+                #     event_list.append({"event_type": cur_event_type, "arguments": [
+                #         {"role": cur_role_type, "argument": entity}]})
+                
+                # start-labels和end-labels方式
                 cur_query_word = fp_role_mrc.data_loader.gen_query_for_each_sample(
                     cur_event_type, cur_role_type)
                 token_ids, query_len, token_type_ids, token_mapping = fp_role_mrc.data_loader.trans_single_data_for_test(
@@ -511,19 +540,19 @@ def parse_kfold_verfify(args):
     id_list, text_list = fp_type.parse_test_json(test_file)
     kfold_type_result_list = []
     event_type_result_list = []
-    # for k in range(6):
-    #     predict_fn = fp_type.load_models_kfold(class_type_model_path.format(k))
-    #     cur_fold_event_type_probs = fp_type.predict_for_all_prob(predict_fn,text_list)
-    #     kfold_type_result_list.append(cur_fold_event_type_probs)
+    for k in range(6):
+        predict_fn = fp_type.load_models_kfold(class_type_model_path.format(k))
+        cur_fold_event_type_probs = fp_type.predict_for_all_prob(predict_fn,text_list)
+        kfold_type_result_list.append(cur_fold_event_type_probs)
 
-    # for i in range(len(text_list)):
-    #     cur_sample_event_type_buffer = [ele[i] for ele in kfold_type_result_list]
-    #     cur_sample_event_type_prob = np.array(cur_sample_event_type_buffer).reshape((6,65))
-    #     avg_result = np.mean(cur_sample_event_type_prob,axis=0)
-    #     event_label_ids = np.argwhere(avg_result > 0.5)
-    #     event_cur_type_strs = [fp_type.data_loader.id2labels_map.get(
-    #             ele[0]) for ele in event_label_ids]
-    #     event_type_result_list.append(event_cur_type_strs)
+    for i in range(len(text_list)):
+        cur_sample_event_type_buffer = [ele[i] for ele in kfold_type_result_list]
+        cur_sample_event_type_prob = np.array(cur_sample_event_type_buffer).reshape((-1,65))
+        avg_result = np.mean(cur_sample_event_type_prob,axis=0)
+        event_label_ids = np.argwhere(avg_result > 0.5)
+        event_cur_type_strs = [fp_type.data_loader.id2labels_map.get(
+                ele[0]) for ele in event_label_ids]
+        event_type_result_list.append(event_cur_type_strs)
 
     # with codecs.open("test2_kfold_new_final_event_type.txt", 'w', 'utf-8') as fw:
     #     for event_type_result in event_type_result_list:
@@ -531,12 +560,12 @@ def parse_kfold_verfify(args):
     #         fw.write(write_line)
     #         fw.write("\n")
 
-    event_type_result_list = []
-    with codecs.open("test2_kfold_new_final_event_type.txt", 'r', 'utf-8') as fr:
-        for line in fr:
-            line = line.strip("\n")
-            event_list_cur = line.split(",")
-            event_type_result_list.append(event_list_cur)
+    # event_type_result_list = []
+    # with codecs.open("test2_kfold_new_final_event_type.txt", 'r', 'utf-8') as fr:
+    #     for line in fr:
+    #         line = line.strip("\n")
+    #         event_list_cur = line.split(",")
+    #         event_type_result_list.append(event_list_cur)
     # cls_model_path = event_config.get(args.event_cls_model_path)
     cls_model_path = "output/model/verify_cls_fold_{}_usingtype_roberta_large_traindev_event_role_bert_mrc_model_desmodified_lowercase/saved_model"
     cls_model_path_new = "output/model/final_verify_cls_fold_{}_usingtype_roberta_large_traindev_event_role_bert_mrc_model_desmodified_lowercase/saved_model"
@@ -549,12 +578,12 @@ def parse_kfold_verfify(args):
     kfold_start_result = []
     kfold_end_result = []
     kfold_hasa_result = []
-    for k in range(6):
+    for k in range(1):
 
-        predict_fn = fp_cls_old.load_models_kfold(cls_model_path.format(k))
+        # predict_fn = fp_cls_old.load_models_kfold(cls_model_path.format(k))
         predict_fn_cls_new = fp_cls_new.load_models_kfold(cls_model_path_new.format(k))
         predict_fn_av = fp_cls_new.load_models_kfold(verify_av_model_path_new.format(k))
-        predict_fn_av_old = fp_cls_old.load_models_kfold(verify_av_model_path_old.format(k))
+        # predict_fn_av_old = fp_cls_old.load_models_kfold(verify_av_model_path_old.format(k))
         cur_fold_cls_probs_result = {}
         cur_fold_av_start_probs_result = {}
         cur_fold_av_end_probs_result = {}
@@ -575,17 +604,21 @@ def parse_kfold_verfify(args):
                 cur_event_av_end_probs_result = []
                 cur_event_av_hasanswer_probs_result = []
                 for cur_role_type in corresponding_role_type_list:
-                    cur_query_word_old = fp_cls_old.data_loader.gen_query_for_each_sample(
-                        cur_event_type, cur_role_type)
-                    token_ids, query_len, token_type_ids, token_mapping = fp_cls_old.data_loader.trans_single_data_for_test(
-                        text, cur_query_word_old, 512)
-                    label_prob = fp_cls_old.predict_single_sample_prob(predict_fn, token_ids, query_len, token_type_ids)
+                    # cur_query_word_old = fp_cls_old.data_loader.gen_query_for_each_sample(
+                        # cur_event_type, cur_role_type)
+                    # token_ids, query_len, token_type_ids, token_mapping = fp_cls_old.data_loader.trans_single_data_for_test(
+                        # text, cur_query_word_old, 512)
+                    # label_prob = fp_cls_old.predict_single_sample_prob(predict_fn, token_ids, query_len, token_type_ids)
 
-                    start_ids, end_ids, start_probs, end_probs, has_answer_probs = fp_cls_old.predict_single_sample_av_prob(
-                        predict_fn_av_old, token_ids, query_len, token_type_ids)
+                    # start_ids, end_ids, start_probs, end_probs, has_answer_probs = fp_cls_old.predict_single_sample_av_prob(
+                        # predict_fn_av_old, token_ids, query_len, token_type_ids)
                     # cur_event_av_start_probs_result.append(start_probs)
                     # cur_event_av_end_probs_result.append(end_probs)
                     # new
+                    has_answer_probs = None
+                    label_prob = None
+                    start_probs = None
+                    end_probs = None
                     cur_query_word_new = fp_cls_new.data_loader.gen_query_for_each_sample(
                         cur_event_type, cur_role_type)
                     token_ids_new, query_len_new, token_type_ids_new, token_mapping_new = fp_cls_new.data_loader.trans_single_data_for_test(
@@ -633,27 +666,28 @@ def parse_kfold_verfify(args):
                 cur_hasa_fold_probs_old = []
                 cur_hasa_fold_probs_new = []
                 for k in range(len(cur_cls_fold_probs)):
-                    cur_cls_fold_probs_old.append(cur_cls_fold_probs[k][0])
+                    # cur_cls_fold_probs_old.append(cur_cls_fold_probs[k][0])
                     cur_cls_fold_probs_new.append(cur_cls_fold_probs[k][1])
-                    cur_hasa_fold_probs_old.append(cur_hasa_fold_probs[k][0])
+                    # cur_hasa_fold_probs_old.append(cur_hasa_fold_probs[k][0])
                     cur_hasa_fold_probs_new.append(cur_hasa_fold_probs[k][1])
 
-                cur_cls_fold_probs_old = np.array(cur_cls_fold_probs_old).reshape((6, 1))
-                cls_avg_result_old = np.mean(cur_cls_fold_probs_old, axis=0)
+                # cur_cls_fold_probs_old = np.array(cur_cls_fold_probs_old).reshape((6, 1))
+                # cls_avg_result_old = np.mean(cur_cls_fold_probs_old, axis=0)
 
-                cur_cls_fold_probs_new = np.array(cur_cls_fold_probs_new).reshape((6, 1))
+                cur_cls_fold_probs_new = np.array(cur_cls_fold_probs_new).reshape((-1, 1))
                 cls_avg_result_new = np.mean(cur_cls_fold_probs_new, axis=0)
 
-                cur_hasa_fold_probs_old = np.array(cur_hasa_fold_probs_old).reshape((6, 1))
-                has_avg_result_old = np.mean(cur_hasa_fold_probs_old, axis=0)
+                # cur_hasa_fold_probs_old = np.array(cur_hasa_fold_probs_old).reshape((6, 1))
+                # has_avg_result_old = np.mean(cur_hasa_fold_probs_old, axis=0)
 
-                cur_hasa_fold_probs_new = np.array(cur_hasa_fold_probs_new).reshape((6, 1))
+                cur_hasa_fold_probs_new = np.array(cur_hasa_fold_probs_new).reshape((-1, 1))
                 has_avg_result_new = np.mean(cur_hasa_fold_probs_new, axis=0)
 
                 # cur_hasa_fold_probs = np.array(cur_hasa_fold_probs).reshape((6,1))
                 # has_avg_result = np.mean(cur_hasa_fold_probs,axis=0)
-                final_probs_hasa = 0.5 * (cls_avg_result_old + cls_avg_result_new) / 2 + 0.5 * (
-                            has_avg_result_old + has_avg_result_new) / 2
+                # final_probs_hasa = 0.5 * (cls_avg_result_old + cls_avg_result_new) / 2 + 0.5 * (
+                #             has_avg_result_old + has_avg_result_new) / 2
+                final_probs_hasa = 0.5 * (cls_avg_result_new) + 0.5 * (has_avg_result_new)
 
                 if final_probs_hasa > 0.4:
                     cur_query_word = fp_cls_new.data_loader.gen_query_for_each_sample(
@@ -661,13 +695,13 @@ def parse_kfold_verfify(args):
                     token_ids, query_len, token_type_ids, token_mapping = fp_cls_new.data_loader.trans_single_data_for_test(
                         text, cur_query_word, 512)
 
-                    cur_query_word_old = fp_cls_old.data_loader.gen_query_for_each_sample(
-                        cur_event_type, cur_role_type)
-                    token_ids_old, query_len_old, token_type_ids_old, token_mapping_old = fp_cls_old.data_loader.trans_single_data_for_test(
-                        text, cur_query_word_old, 512)
+                    # cur_query_word_old = fp_cls_old.data_loader.gen_query_for_each_sample(
+                    #     cur_event_type, cur_role_type)
+                    # token_ids_old, query_len_old, token_type_ids_old, token_mapping_old = fp_cls_old.data_loader.trans_single_data_for_test(
+                    #     text, cur_query_word_old, 512)
 
                     token_len = len(token_ids)
-                    token_len_old = len(token_ids_old)
+                    # token_len_old = len(token_ids_old)
                     cur_start_fold_probs = [probs[index] for probs in fold_start_probs_cur_sample]
                     cur_end_fold_probs = [probs[index] for probs in fold_end_probs_cur_sample]
                     cur_start_fold_probs_old = []
@@ -676,24 +710,24 @@ def parse_kfold_verfify(args):
                     cur_end_fold_probs_new = []
 
                     for k in range(len(cur_start_fold_probs)):
-                        cur_start_fold_probs_old.append(cur_start_fold_probs[k][0])
+                        # cur_start_fold_probs_old.append(cur_start_fold_probs[k][0])
                         cur_start_fold_probs_new.append(cur_start_fold_probs[k][1])
-                        cur_end_fold_probs_old.append(cur_end_fold_probs[k][0])
+                        # cur_end_fold_probs_old.append(cur_end_fold_probs[k][0])
                         cur_end_fold_probs_new.append(cur_end_fold_probs[k][1])
                     # cur_start_fold_probs_old = [probs[index] for probs in fold_start_probs_cur_sample]
                     # cur_end_fold_probs_old = [probs[index] for probs in fold_end_probs_cur_sample]
-                    cur_start_fold_probs_old = np.array(cur_start_fold_probs_old).reshape((6, token_len_old, 2))
-                    cur_end_fold_probs_old = np.array(cur_end_fold_probs_old).reshape((6, token_len_old, 2))
-                    start_avg_result_old = np.mean(cur_start_fold_probs_old, axis=0)
-                    end_avg_result_old = np.mean(cur_end_fold_probs_old, axis=0)
+                    # cur_start_fold_probs_old = np.array(cur_start_fold_probs_old).reshape((6, token_len_old, 2))
+                    # cur_end_fold_probs_old = np.array(cur_end_fold_probs_old).reshape((6, token_len_old, 2))
+                    # start_avg_result_old = np.mean(cur_start_fold_probs_old, axis=0)
+                    # end_avg_result_old = np.mean(cur_end_fold_probs_old, axis=0)
 
-                    pos_start_probs_old = start_avg_result_old[:, 1]
-                    pos_end_probs_old = end_avg_result_old[:, 1]
-                    text_start_probs_old = pos_start_probs_old[query_len_old:-1]
-                    text_end_probs_old = pos_end_probs_old[query_len_old:-1]
+                    # pos_start_probs_old = start_avg_result_old[:, 1]
+                    # pos_end_probs_old = end_avg_result_old[:, 1]
+                    # text_start_probs_old = pos_start_probs_old[query_len_old:-1]
+                    # text_end_probs_old = pos_end_probs_old[query_len_old:-1]
 
-                    cur_start_fold_probs_new = np.array(cur_start_fold_probs_new).reshape((6, token_len, 2))
-                    cur_end_fold_probs_new = np.array(cur_end_fold_probs_new).reshape((6, token_len, 2))
+                    cur_start_fold_probs_new = np.array(cur_start_fold_probs_new).reshape((-1, token_len, 2))
+                    cur_end_fold_probs_new = np.array(cur_end_fold_probs_new).reshape((-1, token_len, 2))
                     start_avg_result_new = np.mean(cur_start_fold_probs_new, axis=0)
                     end_avg_result_new = np.mean(cur_end_fold_probs_new, axis=0)
 
@@ -702,8 +736,10 @@ def parse_kfold_verfify(args):
                     text_start_probs_new = pos_start_probs_new[query_len:-1]
                     text_end_probs_new = pos_end_probs_new[query_len:-1]
 
-                    pos_start_probs = (text_start_probs_old + text_start_probs_new) / 2
-                    pos_end_probs = (text_end_probs_old + text_end_probs_new) / 2
+                    # pos_start_probs = (text_start_probs_old + text_start_probs_new) / 2
+                    # pos_end_probs = (text_end_probs_old + text_end_probs_new) / 2
+                    pos_start_probs = (text_start_probs_new) 
+                    pos_end_probs = (text_end_probs_new)
 
                     start_ids = (pos_start_probs > 0.4).astype(int)
                     # end_ids = np.argmax(end_avg_result,axis=-1)
@@ -713,7 +749,7 @@ def parse_kfold_verfify(args):
 
                     # end_ids = end_ids[query_len:-1]
 
-                    entity_list, span_start_end_tuple_list = fp_cls_old.extract_entity_from_start_end_ids(
+                    entity_list, span_start_end_tuple_list = fp_cls_new.extract_entity_from_start_end_ids(
                         text=text, start_ids=start_ids, end_ids=end_ids, token_mapping=token_mapping)
                     # if len(entity_list) == 0:
                     #     score_has_answer = 0.0
